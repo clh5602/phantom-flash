@@ -1,18 +1,20 @@
-const PATTERN_COUNT = 1;
+const PATTERN_COUNT = 4;
 const FADE_TIMER_MAX = 45; // frames to fade out
 const PAUSE_MAX = 90; // frames to pause
-const PATTERN_LENGTH = 8; // time in seconds a function should last
+let PATTERN_LENGTH = 6 * 60; // time in seconds a function should last
 
 class Ghost {
 
-    constructor(ghostSprites) {
+    constructor(ghostSprites, fr) {
         this.dist = 0; // 0 - 100
-        this.pattern = Math.floor(Math.random() * PATTERN_COUNT);
+        this.pattern = Math.floor(Math.random() * (PATTERN_COUNT));
         this.design = ghostSprites[Math.floor(Math.random() * ghostSprites.length)];
         this.pauseTimer = PAUSE_MAX;
         this.delete = false;
         this.activeTimer = 0;
         this.fadeTimer = FADE_TIMER_MAX;
+        PATTERN_LENGTH = 8 + Math.floor(Math.random() * 4);
+        PATTERN_LENGTH *= fr;
     }
 
     // either fades out,
@@ -27,7 +29,7 @@ class Ghost {
         }
         else if (flashState) {
             // flashlight on
-            if (this.pauseTimer <= 0 && this.dist >= 50) {
+            if (this.pauseTimer <= 0 && this.dist >= 40) {
                 // in range to disappear
                 this.fadeTimer--;
                 return true;
@@ -38,6 +40,7 @@ class Ghost {
             }
         }
         else {
+            this.activeTimer++;
             // flashlight off, can move
             if (this.pauseTimer > 0) {
                 this.pauseTimer--;
@@ -45,9 +48,50 @@ class Ghost {
             }
 
             switch(this.pattern) {
+
+                case 1:
+                    // step pattern
+                    this.dist = 5 + Math.floor(this.activeTimer / (PATTERN_LENGTH / 10)) * 10;
+                    break;
+
+                case 2:
+                    // reverse parabola
+                    if (this.activeTimer < PATTERN_LENGTH / 2) {
+                        this.dist = map(this.activeTimer, PATTERN_LENGTH/2, 0, 20, 50);
+                    } else {
+                        this.dist = map(this.activeTimer, PATTERN_LENGTH/2, PATTERN_LENGTH, 20, 100);
+                    }
+                    break;
+
+                case 3:
+                    // pause
+                    if (this.activeTimer < PATTERN_LENGTH * 0.35) {
+                        this.dist = map(this.activeTimer, 0, PATTERN_LENGTH * 0.35, 0, 35);
+                    } 
+                    else if (this.activeTimer < PATTERN_LENGTH * 0.55) {
+                        this.dist = 35;
+                    }
+                    else {
+                        this.dist = map(this.activeTimer, PATTERN_LENGTH * 0.55, PATTERN_LENGTH, 35, 100);
+                    }
+                    break;
+
+                case 4:
+                    // ramps
+                    if (this.activeTimer < PATTERN_LENGTH * 0.33) {
+                        this.dist = map(this.activeTimer, 0, PATTERN_LENGTH * 0.33, 0, 45);
+                    } 
+                    else if (this.activeTimer < PATTERN_LENGTH * 0.66) {
+                        this.dist = map(this.activeTimer, PATTERN_LENGTH * 0.33, PATTERN_LENGTH * 0.66, 30, 75);
+                    }
+                    else {
+                        this.dist = map(this.activeTimer, PATTERN_LENGTH * 0.66, PATTERN_LENGTH, 60, 100);
+                    }
+                    break;
+
                 default:
                     // linear pattern
-                    this.dist += 100 / (60 * PATTERN_LENGTH);
+                    this.dist += 100 / (PATTERN_LENGTH);
                     break;
             }
         }
@@ -76,7 +120,10 @@ class Ghost {
             return 0;
         }
         else {
-            return this.dist * 40;
+            if (this.dist > 100) {
+                return 1000;
+            }
+            return this.dist * 10;
         }
     }
 
