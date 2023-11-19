@@ -1,3 +1,5 @@
+// Serial info from : https://itp.nyu.edu/physcomp/labs/labs-serial-communication/lab-serial-input-to-the-p5-js-ide/
+
 /* Global variables */
 
 // size of canvas
@@ -6,6 +8,9 @@ const height = 540;
 
 // framerate
 const fr = 60;
+
+// for serial communication
+let serial;
 
 // time settings in frames
 const GAME_LENGTH = fr * 60;
@@ -65,6 +70,16 @@ function preload() {
    ];
 }
 
+function updateFlashlight() {
+   let serialString = serial.read();
+   console.log(serialString)
+ 
+   let photoVal = Number(serialString);
+   console.log(photoVal);
+   flashlightOn = photoVal > 10;
+}
+
+
 /**
  * setup :
  */
@@ -81,8 +96,15 @@ function setup() {
 
    programState = STATE.Title;
    count = TITLE_SCREEN_TIME;
+
+   if (USE_ARDUINO) {
+      serial = new p5.SerialPort();
+      serial.open('COM5');
+      serial.on('data', updateFlashlight);
+   }
 }
 
+// need this for audio to play in keyboard mode
 function keyPressed() {
    userStartAudio();
 }
@@ -93,10 +115,8 @@ function keyPressed() {
  */
 function draw() {
 
-   // input from flashlight
-   if (USE_ARDUINO) {
-
-   } else {
+   // input from keyboard if no arduino
+   if (!USE_ARDUINO) {
       // p5js property, as long as a key is pressed, flashlight on
       flashlightOn = keyIsPressed;
    }
@@ -283,7 +303,7 @@ function draw() {
 
          // sound output
          if (USE_ARDUINO) {
-
+            serial.write(ghost.distance());
          } else {
             // pulse object
             let ghostPitch = ghost.pitch();
@@ -299,6 +319,7 @@ function draw() {
 
       case STATE.GameOver:
          osc.amp(0, 0.1);
+         if (USE_ARDUINO) serial.write(0);
 
          // score
          fill(255);
